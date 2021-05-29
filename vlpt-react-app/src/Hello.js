@@ -7,6 +7,7 @@ function Hello(props) {
         color: props.color,
       }}
     >
+      {props.isSpecial && <b>*</b>}
       Hello {props.name}
     </div>
   );
