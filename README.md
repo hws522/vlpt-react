@@ -576,3 +576,193 @@ onIncrease 와 onDecrease 에서 setNumber 를 사용 할 때 그 다음 상태�
 함수형 업데이트는 주로 나중에 컴포넌트를 최적화를 하게 될 때 사용하게 된다. 지금 당장은 함수형 업데이트란게 있는 것 정도만 이해해두시면 충분하다.
 
 <br>
+
+### **Input 상태 관리**
+
+---
+
+<br>
+
+InputSample.js
+
+```js
+import React from 'react';
+
+function InputSample() {
+  return (
+    <div>
+      <input />
+      <button>초기화</button>
+      <div>
+        <b>값: </b>
+      </div>
+    </div>
+  );
+}
+
+export default InputSample;
+```
+
+App.js
+
+```js
+import React from 'react';
+import InputSample from './InputSample';
+
+function App() {
+  return <InputSample />;
+}
+
+export default App;
+```
+
+input 에 입력하는 값이 하단에 나타나게 하고, 초기화 버튼을 누르면 input 이 값이 비워지도록 구현을 해본다.
+
+이번에도, useState 를 사용한다. 이번에는 input 의 onChange 라는 이벤트를 사용하는데, 이벤트에 등록하는 함수에서는 이벤트 객체 e 를 파라미터로 받아와서 사용 할 수 있다. 이 객체의 e.target 은 이벤트가 발생한 DOM 인 input DOM 을 가르키게됩니다. 이 DOM 의 value 값, 즉 e.target.value 를 조회하면 현재 input 에 입력한 값이 무엇인지 알 수 있다.
+
+이 값을 useState 를 통해서 관리를 해주면 된다.
+
+InputSample.js
+
+```js
+import React, { useState } from 'react';
+
+function InputSample() {
+  const [text, setText] = useState('');
+
+  const onChange = (e) => {
+    setText(e.target.value);
+  };
+
+  const onReset = () => {
+    setText('');
+  };
+
+  return (
+    <div>
+      <input onChange={onChange} value={text} />
+      <button onClick={onReset}>초기화</button>
+      <div>
+        <b>값: {text}</b>
+      </div>
+    </div>
+  );
+}
+
+export default InputSample;
+```
+
+input 의 상태를 관리할 때에는 input 태그의 value 값도 설정해주는 것이 중요하다.
+
+그렇게 해야, 상태가 바뀌었을때 input 의 내용도 업데이트 된다.
+
+<br>
+
+이번에는 input 이 여러개일때는 어떻게 관리해야 하는지 알아본다.
+
+우선 지난번에 만든 InputSample 에서 새로운 input 을 보여주세요.
+
+이번에는 input 이 비어져있을 때 인풋에 대한 설명을 보여주는 placeholder 값도 설정해본다.
+
+InputSample.js
+
+```js
+import React, { useState } from 'react';
+
+function InputSample() {
+  const onChange = (e) => {};
+
+  const onReset = () => {};
+
+  return (
+    <div>
+      <input placeholder="이름" />
+      <input placeholder="닉네임" />
+      <button onClick={onReset}>초기화</button>
+      <div>
+        <b>값: </b>
+        이름 (닉네임)
+      </div>
+    </div>
+  );
+}
+
+export default InputSample;
+```
+
+input 의 개수가 여러개가 됐을때는, 단순히 useState 를 여러번 사용하고 onChange 도 여러개 만들어서 구현 할 수 있다. 하지만 그 방법은 가장 좋은 방법은 아니다.
+
+더 좋은 방법은, input 에 name 을 설정하고 이벤트가 발생했을 때 이 값을 참조하는 것이다. 그리고, useState 에서는 문자열이 아니라 객체 형태의 상태를 관리해주어야 한다.
+
+InputSample.js
+
+```js
+import React, { useState } from 'react';
+
+function InputSample() {
+  const [inputs, setInputs] = useState({
+    name: '',
+    nickname: '',
+  });
+
+  const { name, nickname } = inputs; // 비구조화 할당을 통해 값 추출
+
+  const onChange = (e) => {
+    const { value, name } = e.target; // 우선 e.target 에서 name 과 value 를 추출
+    setInputs({
+      ...inputs, // 기존의 input 객체를 복사한 뒤
+      [name]: value, // name 키를 가진 값을 value 로 설정
+    });
+  };
+
+  const onReset = () => {
+    setInputs({
+      name: '',
+      nickname: '',
+    });
+  };
+
+  return (
+    <div>
+      <input name="name" placeholder="이름" onChange={onChange} value={name} />
+      <input name="nickname" placeholder="닉네임" onChange={onChange} value={nickname} />
+      <button onClick={onReset}>초기화</button>
+      <div>
+        <b>값: </b>
+        {name} ({nickname})
+      </div>
+    </div>
+  );
+}
+
+export default InputSample;
+```
+
+<br>
+
+리액트 상태에서 객체를 수정해야 할 때에는 이런식으로 직접 수정하면 안된다.
+
+```js
+inputs[name] = value;
+```
+
+그 대신 새로운 객체를 만들어서 새로운 객체에 변화를 주고, 이를 상태로 사용해주어야 한다.
+
+```js
+setInputs({
+  ...inputs,
+  [name]: value,
+});
+```
+
+이러한 작업을, "불변성을 지킨다" 라고 부른다. 불변성을 지켜주어야만 리액트 컴포넌트에서 상태가 업데이트가 됐음을 감지 할 수 있고 이에 따라 필요한 리렌더링이 진행된다.
+
+만약에 `inputs[name] = value` 이런식으로 기존 상태를 직접 수정하게 되면, 값을 바꿔도 리렌더링이 되지 않는다.
+
+추가적으로, 리액트에서는 불변성을 지켜주어야만 컴포넌트 업데이트 성능 최적화를 제대로 할 수 있다.
+
+지금은 이것만 기억하자.
+
+리액트에서 객체를 업데이트하게 될 때에는 **기존 객체를 직접 수정하면 안되고, 새로운 객체를 만들어서** 새 객체에 변화를 주어야 된다.
+
+<br>
