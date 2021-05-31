@@ -660,7 +660,7 @@ input 의 상태를 관리할 때에는 input 태그의 value 값도 설정해�
 
 이번에는 input 이 여러개일때는 어떻게 관리해야 하는지 알아본다.
 
-우선 지난번에 만든 InputSample 에서 새로운 input 을 보여주세요.
+우선 지난번에 만든 InputSample 에서 새로운 input 을 만든다.
 
 이번에는 input 이 비어져있을 때 인풋에 대한 설명을 보여주는 placeholder 값도 설정해본다.
 
