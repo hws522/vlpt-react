@@ -1216,3 +1216,709 @@ export default App;
 그리고 이 값을 수정 할때에는 `.current` 값을 수정하면 되고, 조회 할 때에는 `.current` 를 조회하면 된다.
 
 <br>
+
+### **배열에 항목 추가, 제거, 수정**
+
+---
+
+<br>
+
+input 두개와 button 하나로 이루어진 CreateUser.js 라는 컴포넌트를 src 디렉터리에 만들어보자.
+
+CreateUser.js
+
+```js
+import React from 'react';
+
+function CreateUser({ username, email, onChange, onCreate }) {
+  return (
+    <div>
+      <input name="username" placeholder="계정명" onChange={onChange} value={username} />
+      <input name="email" placeholder="이메일" onChange={onChange} value={email} />
+      <button onClick={onCreate}>등록</button>
+    </div>
+  );
+}
+
+export default CreateUser;
+```
+
+이번 컴포넌트에서는 상태관리를 CreateUser 에서 하지 않고 부모 컴포넌트인 App 에서 하게 하고, input 의 값 및 이벤트로 등록할 함수들을 props 로 넘겨받아서 사용한다.
+
+App.js
+
+```js
+import React, { useRef } from 'react';
+import UserList from './UserList';
+import CreateUser from './CreateUser';
+
+function App() {
+  const users = [
+    {
+      id: 1,
+      username: 'velopert',
+      email: 'public.velopert@gmail.com',
+    },
+    {
+      id: 2,
+      username: 'tester',
+      email: 'tester@example.com',
+    },
+    {
+      id: 3,
+      username: 'liz',
+      email: 'liz@example.com',
+    },
+  ];
+
+  const nextId = useRef(4);
+  const onCreate = () => {
+    // 나중에 구현 할 배열에 항목 추가하는 로직
+    // ...
+
+    nextId.current += 1;
+  };
+  return (
+    <>
+      <CreateUser />
+      <UserList users={users} />
+    </>
+  );
+}
+
+export default App;
+```
+
+CreateUser 컴포넌트에게 필요한 props 를 App 에서 준비한다.
+
+App.js
+
+```js
+import React, { useRef, useState } from 'react';
+import UserList from './UserList';
+import CreateUser from './CreateUser';
+
+function App() {
+  const [inputs, setInputs] = useState({
+    username: '',
+    email: '',
+  });
+  const { username, email } = inputs;
+  const onChange = (e) => {
+    const { name, value } = e.target;
+    setInputs({
+      ...inputs,
+      [name]: value,
+    });
+  };
+  const users = [
+    {
+      id: 1,
+      username: 'velopert',
+      email: 'public.velopert@gmail.com',
+    },
+    {
+      id: 2,
+      username: 'tester',
+      email: 'tester@example.com',
+    },
+    {
+      id: 3,
+      username: 'liz',
+      email: 'liz@example.com',
+    },
+  ];
+
+  const nextId = useRef(4);
+  const onCreate = () => {
+    // 나중에 구현 할 배열에 항목 추가하는 로직
+    // ...
+
+    setInputs({
+      username: '',
+      email: '',
+    });
+    nextId.current += 1;
+  };
+  return (
+    <>
+      <CreateUser username={username} email={email} onChange={onChange} onCreate={onCreate} />
+      <UserList users={users} />
+    </>
+  );
+}
+
+export default App;
+```
+
+그 다음, users 도 useState 를 사용하여 컴포넌트의 상태로서 관리해준다.
+
+App.js
+
+```js
+import React, { useRef, useState } from 'react';
+import UserList from './UserList';
+import CreateUser from './CreateUser';
+
+function App() {
+  const [inputs, setInputs] = useState({
+    username: '',
+    email: '',
+  });
+  const { username, email } = inputs;
+  const onChange = (e) => {
+    const { name, value } = e.target;
+    setInputs({
+      ...inputs,
+      [name]: value,
+    });
+  };
+  const [users, setUsers] = useState([
+    {
+      id: 1,
+      username: 'velopert',
+      email: 'public.velopert@gmail.com',
+    },
+    {
+      id: 2,
+      username: 'tester',
+      email: 'tester@example.com',
+    },
+    {
+      id: 3,
+      username: 'liz',
+      email: 'liz@example.com',
+    },
+  ]);
+
+  const nextId = useRef(4);
+  const onCreate = () => {
+    // 나중에 구현 할 배열에 항목 추가하는 로직
+    // ...
+
+    setInputs({
+      username: '',
+      email: '',
+    });
+    nextId.current += 1;
+  };
+  return (
+    <>
+      <CreateUser username={username} email={email} onChange={onChange} onCreate={onCreate} />
+      <UserList users={users} />
+    </>
+  );
+}
+
+export default App;
+```
+
+이제 배열에 변화를 줄 차례다.
+
+배열에 변화를 줄 때에는 객체와 마찬가지로, 불변성을 지켜주어야 한다.
+
+그렇기 때문에, 배열의 `push`, `splice`, `sort` 등의 함수를 사용하면 안된다.
+
+만약에 사용해야 한다면, 기존의 배열을 한번 복사하고 나서 사용해야한다.
+
+불변성을 지키면서 배열에 새 항목을 추가하는 방법은 두가지가 있다.
+
+첫번째는 `spread` 연산자를 사용하는 것이다.
+
+App.js
+
+```js
+import React, { useRef, useState } from 'react';
+import UserList from './UserList';
+import CreateUser from './CreateUser';
+
+function App() {
+  const [inputs, setInputs] = useState({
+    username: '',
+    email: '',
+  });
+  const { username, email } = inputs;
+  const onChange = (e) => {
+    const { name, value } = e.target;
+    setInputs({
+      ...inputs,
+      [name]: value,
+    });
+  };
+  const [users, setUsers] = useState([
+    {
+      id: 1,
+      username: 'velopert',
+      email: 'public.velopert@gmail.com',
+    },
+    {
+      id: 2,
+      username: 'tester',
+      email: 'tester@example.com',
+    },
+    {
+      id: 3,
+      username: 'liz',
+      email: 'liz@example.com',
+    },
+  ]);
+
+  const nextId = useRef(4);
+  const onCreate = () => {
+    const user = {
+      id: nextId.current,
+      username,
+      email,
+    };
+    setUsers([...users, user]);
+
+    setInputs({
+      username: '',
+      email: '',
+    });
+    nextId.current += 1;
+  };
+  return (
+    <>
+      <CreateUser username={username} email={email} onChange={onChange} onCreate={onCreate} />
+      <UserList users={users} />
+    </>
+  );
+}
+
+export default App;
+```
+
+또 다른 방법은 `concat` 함수를 사용하는 것이다.
+
+`concat` 함수는 기존의 배열을 수정하지 않고, 새로운 원소가 추가된 새로운 배열을 만들어준다.
+
+App.js
+
+```js
+import React, { useRef, useState } from 'react';
+import UserList from './UserList';
+import CreateUser from './CreateUser';
+
+function App() {
+  const [inputs, setInputs] = useState({
+    username: '',
+    email: '',
+  });
+  const { username, email } = inputs;
+  const onChange = (e) => {
+    const { name, value } = e.target;
+    setInputs({
+      ...inputs,
+      [name]: value,
+    });
+  };
+  const [users, setUsers] = useState([
+    {
+      id: 1,
+      username: 'velopert',
+      email: 'public.velopert@gmail.com',
+    },
+    {
+      id: 2,
+      username: 'tester',
+      email: 'tester@example.com',
+    },
+    {
+      id: 3,
+      username: 'liz',
+      email: 'liz@example.com',
+    },
+  ]);
+
+  const nextId = useRef(4);
+  const onCreate = () => {
+    const user = {
+      id: nextId.current,
+      username,
+      email,
+    };
+    setUsers(users.concat(user));
+
+    setInputs({
+      username: '',
+      email: '',
+    });
+    nextId.current += 1;
+  };
+  return (
+    <>
+      <CreateUser username={username} email={email} onChange={onChange} onCreate={onCreate} />
+      <UserList users={users} />
+    </>
+  );
+}
+
+export default App;
+```
+
+<br>
+<br>
+
+배열에 항목을 제거 할 때에는 어떻게 해야 하는지 알아보자.
+
+우선, UserList 에서 각 User 컴포넌트를 보여줄 때, 삭제 버튼을 렌더링해준다.
+
+UserList.js
+
+```js
+import React from 'react';
+
+function User({ user, onRemove }) {
+  return (
+    <div>
+      <b>{user.username}</b> <span>({user.email})</span>
+      <button onClick={() => onRemove(user.id)}>삭제</button>
+    </div>
+  );
+}
+
+function UserList({ users, onRemove }) {
+  return (
+    <div>
+      {users.map((user) => (
+        <User user={user} key={user.id} onRemove={onRemove} />
+      ))}
+    </div>
+  );
+}
+
+export default UserList;
+```
+
+User 컴포넌트의 삭제 버튼이 클릭 될 때는 `user.id` 값을 앞으로 props 로 받아올 `onRemove` 함수의 파라미터로 넣어서 호출해주어야 한다.
+
+여기서 onRemove 는 "id 가 \_\_인 객체를 삭제해라" 라는 역할을 가지고 있다.
+
+이 onRemove 함수는 UserList 에서도 전달 받을것이며, 이를 그대로 User 컴포넌트에게 전달해줄것이다.
+
+이제, onRemove 함수를 구현해보자.
+
+배열에 있는 항목을 제거할 때에는, 추가할 때와 마찬가지로 불변성을 지켜가면서 업데이트를 해주어야 한다.
+
+불변성을 지키면서 특정 원소를 배열에서 제거하기 위해서는 `filter` 배열 내장 함수를 사용하는것이 가장 편하다.
+
+이 함수는 배열에서 특정 조건이 만족하는 원소들만 추출하여 새로운 배열을 만들어 준다.
+
+App 컴포넌트에서 onRemove 를 다음과 같이 구현후, UserList 에게 전달한다.
+
+App.js
+
+```js
+import React, { useRef, useState } from 'react';
+import UserList from './UserList';
+import CreateUser from './CreateUser';
+
+function App() {
+  const [inputs, setInputs] = useState({
+    username: '',
+    email: '',
+  });
+  const { username, email } = inputs;
+  const onChange = (e) => {
+    const { name, value } = e.target;
+    setInputs({
+      ...inputs,
+      [name]: value,
+    });
+  };
+  const [users, setUsers] = useState([
+    {
+      id: 1,
+      username: 'velopert',
+      email: 'public.velopert@gmail.com',
+    },
+    {
+      id: 2,
+      username: 'tester',
+      email: 'tester@example.com',
+    },
+    {
+      id: 3,
+      username: 'liz',
+      email: 'liz@example.com',
+    },
+  ]);
+
+  const nextId = useRef(4);
+  const onCreate = () => {
+    const user = {
+      id: nextId.current,
+      username,
+      email,
+    };
+    setUsers(users.concat(user));
+
+    setInputs({
+      username: '',
+      email: '',
+    });
+    nextId.current += 1;
+  };
+
+  const onRemove = (id) => {
+    // user.id 가 파라미터로 일치하지 않는 원소만 추출해서 새로운 배열을 만듬
+    // = user.id 가 id 인 것을 제거함
+    setUsers(users.filter((user) => user.id !== id));
+  };
+  return (
+    <>
+      <CreateUser username={username} email={email} onChange={onChange} onCreate={onCreate} />
+      <UserList users={users} onRemove={onRemove} />
+    </>
+  );
+}
+
+export default App;
+```
+
+<br>
+<br>
+
+배열 항목을 수정하는 방법을 알아보자.
+
+User 컴포넌트에 계정명을 클릭했을때 색상이 초록색으로 바뀌고, 다시 누르면 검정색으로 바뀌도록 구현을 해본다.
+
+우선, App 컴포넌트의 users 배열 안의 객체 안에 `active` 라는 속성을 추가해준다. (속성명은 아무거나 해도 된다.)
+
+App.js
+
+```js
+import React, { useRef, useState } from 'react';
+import UserList from './UserList';
+import CreateUser from './CreateUser';
+
+function App() {
+  const [inputs, setInputs] = useState({
+    username: '',
+    email: '',
+  });
+  const { username, email } = inputs;
+  const onChange = (e) => {
+    const { name, value } = e.target;
+    setInputs({
+      ...inputs,
+      [name]: value,
+    });
+  };
+  const [users, setUsers] = useState([
+    {
+      id: 1,
+      username: 'velopert',
+      email: 'public.velopert@gmail.com',
+      active: true,
+    },
+    {
+      id: 2,
+      username: 'tester',
+      email: 'tester@example.com',
+      active: false,
+    },
+    {
+      id: 3,
+      username: 'liz',
+      email: 'liz@example.com',
+      active: false,
+    },
+  ]);
+
+  const nextId = useRef(4);
+  const onCreate = () => {
+    const user = {
+      id: nextId.current,
+      username,
+      email,
+    };
+    setUsers(users.concat(user));
+
+    setInputs({
+      username: '',
+      email: '',
+    });
+    nextId.current += 1;
+  };
+
+  const onRemove = (id) => {
+    // user.id 가 파라미터로 일치하지 않는 원소만 추출해서 새로운 배열을 만듬
+    // = user.id 가 id 인 것을 제거함
+    setUsers(users.filter((user) => user.id !== id));
+  };
+
+  return (
+    <>
+      <CreateUser username={username} email={email} onChange={onChange} onCreate={onCreate} />
+      <UserList users={users} onRemove={onRemove} onToggle={onToggle} />
+    </>
+  );
+}
+
+export default App;
+```
+
+그 다음에는 User 컴포넌트에서 방금 넣어준 `active` 값에 따라 폰트의 색상을 바꿔주도록 구현을 해본다.
+
+추가적으로, `cursor` 필드를 설정하여 마우스를 올렸을때 커서가 손가락 모양으로 변하도록 한다.
+
+UserList.js
+
+```js
+import React from 'react';
+
+function User({ user, onRemove }) {
+  return (
+    <div>
+      <b
+        style={{
+          cursor: 'pointer',
+          color: user.active ? 'green' : 'black',
+        }}
+      >
+        {user.username}
+      </b>
+
+      <span>({user.email})</span>
+      <button onClick={() => onRemove(user.id)}>삭제</button>
+    </div>
+  );
+}
+
+function UserList({ users, onRemove }) {
+  return (
+    <div>
+      {users.map((user) => (
+        <User user={user} key={user.id} onRemove={onRemove} />
+      ))}
+    </div>
+  );
+}
+
+export default UserList;
+```
+
+이제 App.js 에서 `onToggle` 이라는 함수를 구현해보자.
+
+배열의 불변성을 유지하면서 배열을 업데이트 할 때에도 `map` 함수를 사용 할 수 있다.
+
+`id` 값을 비교해서 `id` 가 다르다면 그대로 두고, 같다면 `active` 값을 반전시키도록 구현을 하면 된다.
+
+`onToggle` 함수를 만들어서 UserList 컴포넌트에게 전달한다.
+
+App.js
+
+```js
+import React, { useRef, useState } from 'react';
+import UserList from './UserList';
+import CreateUser from './CreateUser';
+
+function App() {
+  const [inputs, setInputs] = useState({
+    username: '',
+    email: '',
+  });
+  const { username, email } = inputs;
+  const onChange = (e) => {
+    const { name, value } = e.target;
+    setInputs({
+      ...inputs,
+      [name]: value,
+    });
+  };
+  const [users, setUsers] = useState([
+    {
+      id: 1,
+      username: 'velopert',
+      email: 'public.velopert@gmail.com',
+      active: true,
+    },
+    {
+      id: 2,
+      username: 'tester',
+      email: 'tester@example.com',
+      active: false,
+    },
+    {
+      id: 3,
+      username: 'liz',
+      email: 'liz@example.com',
+      active: false,
+    },
+  ]);
+
+  const nextId = useRef(4);
+  const onCreate = () => {
+    const user = {
+      id: nextId.current,
+      username,
+      email,
+    };
+    setUsers(users.concat(user));
+
+    setInputs({
+      username: '',
+      email: '',
+    });
+    nextId.current += 1;
+  };
+
+  const onRemove = (id) => {
+    // user.id 가 파라미터로 일치하지 않는 원소만 추출해서 새로운 배열을 만듬
+    // = user.id 가 id 인 것을 제거함
+    setUsers(users.filter((user) => user.id !== id));
+  };
+  const onToggle = (id) => {
+    setUsers(users.map((user) => (user.id === id ? { ...user, active: !user.active } : user)));
+  };
+  return (
+    <>
+      <CreateUser username={username} email={email} onChange={onChange} onCreate={onCreate} />
+      <UserList users={users} onRemove={onRemove} onToggle={onToggle} />
+    </>
+  );
+}
+
+export default App;
+```
+
+그 다음에는 UserList 컴포넌트에서 `onToggle` 를 받아와서 User 에게 전달해주고, `onRemove` 를 구현했었던 것처럼 `onToggle` 에 `id` 를 넣어서 호출한다.
+
+UserList.js
+
+```js
+import React from 'react';
+
+function User({ user, onRemove, onToggle }) {
+  return (
+    <div>
+      <b
+        style={{
+          cursor: 'pointer',
+          color: user.active ? 'green' : 'black',
+        }}
+        onClick={() => onToggle(user.id)}
+      >
+        {user.username}
+      </b>
+      &nbsp;
+      <span>({user.email})</span>
+      <button onClick={() => onRemove(user.id)}>삭제</button>
+    </div>
+  );
+}
+
+function UserList({ users, onRemove, onToggle }) {
+  return (
+    <div>
+      {users.map((user) => (
+        <User user={user} key={user.id} onRemove={onRemove} onToggle={onToggle} />
+      ))}
+    </div>
+  );
+}
+
+export default UserList;
+```
