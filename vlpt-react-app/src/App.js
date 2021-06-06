@@ -1,5 +1,5 @@
 import React, { useRef, useState, useMemo, useCallback } from 'react';
-import './App.css';
+
 import Counter from './Counter';
 import CreateUser from './CreateUser';
 import InputSample from './InputSample';
