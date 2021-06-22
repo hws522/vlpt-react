@@ -4262,4 +4262,60 @@ const onClick = useCallback(() => {
 }, []);
 ```
 
+이렇게 `setTodo` 함수에 업데이트를 해주는 함수를 넣음으로써, 만약 `useCallback` 을 사용하는 경우 두번째 파라미터인 `deps` 배열에 `todo` 를 넣지 않아도 되게 된다.
+
+이렇게 함수형 업데이트를 하는 경우에, `Immer` 를 사용하면 상황에 따라 더 편하게 코드를 작성 할 수 있다.
+
+만약에 `produce` 함수에 두개의 파라미터를 넣게 된다면, 첫번째 파라미터에 넣은 상태를 불변성을 유지하면서 새로운 상태를 만들어주지만, 만약에 첫번째 파라미터를 생략하고 바로 업데이트 함수를 넣어주게 된다면, 반환 값은 새로운 상태가 아닌 상태를 업데이트 해주는 함수가 된다. 
+
+```js
+const todo = {
+  text: 'Hello',
+  done: false
+};
+
+const updater = produce(draft => {
+  draft.done = !draft.done;
+});
+
+const nextTodo = updater(todo);
+
+console.log(nextTodo);
+// { text: 'Hello', done: true }
+```
+
+결국 `produce` 가 반환하는것이 업데이트 함수가 되기 때문에 `useState` 의 업데이트 함수를 사용 할 떄 다음과 같이 구현 할 수 있게 된다.
+
+```js
+const [todo, setTodo] = useState({
+  text: 'Hello',
+  done: false
+});
+
+const onClick = useCallback(() => {
+  setTodo(
+    produce(draft => {
+      draft.done = !draft.done;
+    })
+  );
+}, []);
+```
+
+`Immer` 은 분명히 정말 편한 라이브러리인것은 사실이나, 성능적으로는 `Immer` 를 사용하지 않은 코드가 조금 더 빠르다는 점이다.
+
+하지만, 데이터가 50,000개 가량 있는게 아니라면 별로 성능 차이가 별로 없을 것이기 때문에 걱정하지 않아도 된다.
+
+단, `Immer` 는 JavaScript 엔진의 `Proxy` 라는 기능을 사용하는데, 구형 브라우저 및 react-native 같은 환경에서는 지원되지 않으므로 (Proxy 처럼 작동하지만 Proxy는 아닌) ES5 fallback 을 사용하게 된다. 
+
+ES5 fallback 을 사용하게 되는경우는 191ms 정도로, 꽤나 느려지게 된다. 물론, 여전히 데이터가 별로 없다면 크게 걱정 할 필요는 없다.
+
+`Immer` 라이브러리는 확실히 편하기 때문에, 데이터의 구조가 복잡해져서 불변성을 유지하면서 업데이트하려면 코드가 복잡해지는 상황이 온다면, 이를 사용하는 것을 권장한다.
+
+다만, 무조건 사용을 하진 말고, 가능하면 데이터의 구조가 복잡해지게 되는 것을 방지한다. 
+
+그리고 어쩔 수 없을 때 `Immer` 를 사용하는것이 좋다. 
+
+`Immer` 를 사용한다고 해도, 필요한곳에만 쓰고, 간단히 처리 될 수 있는 곳에서는 그냥 일반 JavaScript 로 구현하자.
+
+<br>
 
