@@ -1,16 +1,16 @@
-import React from 'react';
+import React, { Component } from 'react';
 
-function Hello(props) {
-  return (
-    <div
-      style={{
-        color: props.color,
-      }}
-    >
-      {props.isSpecial && <b>*</b>}
-      Hello {props.name}
-    </div>
-  );
+class Hello extends Component {
+  render() {
+    const { color, name, isSpecial } = this.props;
+
+    return (
+      <div style={{ color }}>
+        {isSpecial && <b>*</b>}
+        안녕하세요 {name}
+      </div>
+    );
+  }
 }
 
 Hello.defaultProps = {

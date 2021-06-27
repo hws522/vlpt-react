@@ -3985,6 +3985,7 @@ export default React.memo(UserList);
 <br>
 
 ### **Immer 를 사용한 더 쉬운 불변성 관리**
+
 ---
 
 <br>
@@ -3996,7 +3997,7 @@ export default React.memo(UserList);
 ```js
 const object = {
   a: 1,
-  b: 2
+  b: 2,
 };
 
 object.b = 3;
@@ -4007,12 +4008,12 @@ object.b = 3;
 ```js
 const object = {
   a: 1,
-  b: 2
+  b: 2,
 };
 
 const nextObject = {
   ...object,
-  b: 3
+  b: 3,
 };
 ```
 
@@ -4064,9 +4065,9 @@ const state = {
       comments: [
         {
           id: 1,
-          text: '와 정말 잘 읽었습니다.'
-        }
-      ]
+          text: '와 정말 잘 읽었습니다.',
+        },
+      ],
     },
     {
       id: 2,
@@ -4075,12 +4076,12 @@ const state = {
       comments: [
         {
           id: 2,
-          text: '또 다른 댓글 어쩌고 저쩌고'
-        }
-      ]
-    }
+          text: '또 다른 댓글 어쩌고 저쩌고',
+        },
+      ],
+    },
   ],
-  selectedId: 1
+  selectedId: 1,
 };
 ```
 
@@ -4089,17 +4090,17 @@ const state = {
 ```js
 const nextState = {
   ...state,
-  posts: state.posts.map(post =>
+  posts: state.posts.map((post) =>
     post.id === 1
       ? {
           ...post,
           comments: post.comments.concat({
             id: 3,
-            text: '새로운 댓글'
-          })
+            text: '새로운 댓글',
+          }),
         }
       : post
-  )
+  ),
 };
 ```
 
@@ -4108,11 +4109,11 @@ const nextState = {
 이럴 때, `immer` 라는 라이브러리를 사용하면 다음과 같이 구현할 수 있다.
 
 ```js
-const nextState = produce(state, draft => {
-  const post = draft.posts.find(post => post.id === 1);
+const nextState = produce(state, (draft) => {
+  const post = draft.posts.find((post) => post.id === 1);
   post.comments.push({
     id: 3,
-    text: '와 정말 쉽다!'
+    text: '와 정말 쉽다!',
   });
 });
 ```
@@ -4120,7 +4121,6 @@ const nextState = produce(state, draft => {
 `Immer` 를 배우기전에 간단하게 요약을 하자면 `Immer` 를 사용하면 우리가 상태를 업데이트 할 때, 불변성을 신경쓰지 않으면서 업데이트를 해주면 `Immer` 가 불변성 관리를 대신 해준다!
 
 <br>
-
 
 프로젝트에서 다음 명령어를 실행하여 `Immer` 를 설치한다.
 
@@ -4143,10 +4143,10 @@ import produce from 'immer';
 ```js
 const state = {
   number: 1,
-  dontChangeMe: 2
+  dontChangeMe: 2,
 };
 
-const nextState = produce(state, draft => {
+const nextState = produce(state, (draft) => {
   draft.number += 1;
 });
 
@@ -4172,7 +4172,7 @@ import produce from 'immer';
 
 function countActiveUsers(users) {
   console.log('활성 사용자 수를 세는중...');
-  return users.filter(user => user.active).length;
+  return users.filter((user) => user.active).length;
 }
 
 const initialState = {
@@ -4181,37 +4181,37 @@ const initialState = {
       id: 1,
       username: 'velopert',
       email: 'public.velopert@gmail.com',
-      active: true
+      active: true,
     },
     {
       id: 2,
       username: 'tester',
       email: 'tester@example.com',
-      active: false
+      active: false,
     },
     {
       id: 3,
       username: 'liz',
       email: 'liz@example.com',
-      active: false
-    }
-  ]
+      active: false,
+    },
+  ],
 };
 
 function reducer(state, action) {
   switch (action.type) {
     case 'CREATE_USER':
-      return produce(state, draft => {
+      return produce(state, (draft) => {
         draft.users.push(action.user);
       });
     case 'TOGGLE_USER':
-      return produce(state, draft => {
-        const user = draft.users.find(user => user.id === action.id);
+      return produce(state, (draft) => {
+        const user = draft.users.find((user) => user.id === action.id);
         user.active = !user.active;
       });
     case 'REMOVE_USER':
-      return produce(state, draft => {
-        const index = draft.users.findIndex(user => user.id === action.id);
+      return produce(state, (draft) => {
+        const index = draft.users.findIndex((user) => user.id === action.id);
         draft.users.splice(index, 1);
       });
     default:
@@ -4240,7 +4240,7 @@ function App() {
 export default App;
 ```
 
-`TOGGLE_USER` 액션의 경우엔 확실히 `Immer` 를 사용하니 코드가 깔끔해졌지만 나머지의 경우에는 오히려 코드가 좀 복잡해졌다. 
+`TOGGLE_USER` 액션의 경우엔 확실히 `Immer` 를 사용하니 코드가 깔끔해졌지만 나머지의 경우에는 오히려 코드가 좀 복잡해졌다.
 
 상황에 따라 잘 선택하여 사용하면 된다. `Immer` 를 사용한다고 해서 모든 업데이트 로직에서 사용할 필요는 없다.
 
@@ -4251,13 +4251,13 @@ export default App;
 ```js
 const [todo, setTodo] = useState({
   text: 'Hello',
-  done: false
+  done: false,
 });
 
 const onClick = useCallback(() => {
-  setTodo(todo => ({
+  setTodo((todo) => ({
     ...todo,
-    done: !todo.done
+    done: !todo.done,
   }));
 }, []);
 ```
@@ -4266,15 +4266,15 @@ const onClick = useCallback(() => {
 
 이렇게 함수형 업데이트를 하는 경우에, `Immer` 를 사용하면 상황에 따라 더 편하게 코드를 작성 할 수 있다.
 
-만약에 `produce` 함수에 두개의 파라미터를 넣게 된다면, 첫번째 파라미터에 넣은 상태를 불변성을 유지하면서 새로운 상태를 만들어주지만, 만약에 첫번째 파라미터를 생략하고 바로 업데이트 함수를 넣어주게 된다면, 반환 값은 새로운 상태가 아닌 상태를 업데이트 해주는 함수가 된다. 
+만약에 `produce` 함수에 두개의 파라미터를 넣게 된다면, 첫번째 파라미터에 넣은 상태를 불변성을 유지하면서 새로운 상태를 만들어주지만, 만약에 첫번째 파라미터를 생략하고 바로 업데이트 함수를 넣어주게 된다면, 반환 값은 새로운 상태가 아닌 상태를 업데이트 해주는 함수가 된다.
 
 ```js
 const todo = {
   text: 'Hello',
-  done: false
+  done: false,
 };
 
-const updater = produce(draft => {
+const updater = produce((draft) => {
   draft.done = !draft.done;
 });
 
@@ -4289,12 +4289,12 @@ console.log(nextTodo);
 ```js
 const [todo, setTodo] = useState({
   text: 'Hello',
-  done: false
+  done: false,
 });
 
 const onClick = useCallback(() => {
   setTodo(
-    produce(draft => {
+    produce((draft) => {
       draft.done = !draft.done;
     })
   );
@@ -4305,17 +4305,215 @@ const onClick = useCallback(() => {
 
 하지만, 데이터가 50,000개 가량 있는게 아니라면 별로 성능 차이가 별로 없을 것이기 때문에 걱정하지 않아도 된다.
 
-단, `Immer` 는 JavaScript 엔진의 `Proxy` 라는 기능을 사용하는데, 구형 브라우저 및 react-native 같은 환경에서는 지원되지 않으므로 (Proxy 처럼 작동하지만 Proxy는 아닌) ES5 fallback 을 사용하게 된다. 
+단, `Immer` 는 JavaScript 엔진의 `Proxy` 라는 기능을 사용하는데, 구형 브라우저 및 react-native 같은 환경에서는 지원되지 않으므로 (Proxy 처럼 작동하지만 Proxy는 아닌) ES5 fallback 을 사용하게 된다.
 
 ES5 fallback 을 사용하게 되는경우는 191ms 정도로, 꽤나 느려지게 된다. 물론, 여전히 데이터가 별로 없다면 크게 걱정 할 필요는 없다.
 
 `Immer` 라이브러리는 확실히 편하기 때문에, 데이터의 구조가 복잡해져서 불변성을 유지하면서 업데이트하려면 코드가 복잡해지는 상황이 온다면, 이를 사용하는 것을 권장한다.
 
-다만, 무조건 사용을 하진 말고, 가능하면 데이터의 구조가 복잡해지게 되는 것을 방지한다. 
+다만, 무조건 사용을 하진 말고, 가능하면 데이터의 구조가 복잡해지게 되는 것을 방지한다.
 
-그리고 어쩔 수 없을 때 `Immer` 를 사용하는것이 좋다. 
+그리고 어쩔 수 없을 때 `Immer` 를 사용하는것이 좋다.
 
 `Immer` 를 사용한다고 해도, 필요한곳에만 쓰고, 간단히 처리 될 수 있는 곳에서는 그냥 일반 JavaScript 로 구현하자.
 
 <br>
 
+### **LifeCycle Method**
+
+---
+
+<br>
+
+LifeCycle Method 는 한국어로 "생명주기 메서드" 라고 부른다.
+
+생명주기 메서드는 컴포넌트가 브라우저상에 나타나고, 업데이트되고, 사라지게 될 때 호출되는 메서드이다. 추가적으로 컴포넌트에서 에러가 났을 때 호출되는 메서드도 있다.
+
+생명주기 메서드는 클래스형 컴포넌트에서만 사용 할 수 있는데, 우리가 기존에 배웠었던 `useEffect` 랑 은근히 비슷하다고 생각하면 된다. (물론 작동방식은 많이 다르다. 커버하지 않는 기능들도 있다.)
+
+리액트를 배우게 될 때, 이 개념에 대하여 너무 많이 시간을 쏟지 않는 것을 권장한다.
+
+앞으로 사용 할 일이 별로 없을 것이다. 다만 어떤것들이 있는지만 알아두고, 나중에 사용 해야 할 일이 있다면 매뉴얼을 보고 사용 할 수 있는 정도만 학습해놓으면 된다.
+
+<br>
+
+<img src='https://i.imgur.com/cNfpEph.png'>
+
+<br>
+
+#### **마운트**
+
+마운트될 때 발생하는 생명주기
+
+- constructor
+- getDerivedStateFromProps
+- render
+- componentDidMount
+
+<br>
+
+constructor
+
+`constructor` 는 컴포넌트의 생성자 메서드다. 컴포넌트가 만들어지면 가장 먼저 실행되는 메서드.
+
+```js
+ constructor(props) {
+    super(props);
+    console.log("constructor");
+  }
+```
+
+getDerivedStateFromProps
+
+`getDerivedStateFromProps` 는 `props` 로 받아온 것을 `state` 에 넣어주고 싶을 때 사용한다.
+
+```js
+  static getDerivedStateFromProps(nextProps, prevState) {
+    console.log("getDerivedStateFromProps");
+    if (nextProps.color !== prevState.color) {
+      return { color: nextProps.color };
+    }
+    return null;
+  }
+```
+
+다른 생명주기 메서드와는 달리 앞에 static 을 필요로 하고, 이 안에서는 this 롤 조회 할 수 없다.
+
+여기서 특정 객체를 반환하게 되면 해당 객체 안에 있는 내용들이 컴포넌트의 state 로 설정된다. 반면 null 을 반환하게 되면 아무 일도 발생하지 않는다.
+
+참고로 이 메서드는 컴포넌트가 처음 렌더링 되기 전에도 호출 되고, 그 이후 리렌더링 되기 전에도 매번 실행된다.
+
+render
+
+컴포넌트를 렌더링하는 메서드.
+
+componentDidMount
+
+컴포넌트의 첫번째 렌더링이 마치고 나면 호출되는 메서드다.
+
+이 메서드가 호출되는 시점에는 우리가 만든 컴포넌트가 화면에 나타난 상태. 여기선 주로 D3, masonry 처럼 DOM 을 사용해야하는 외부 라이브러리 연동을 하거나, 해당 컴포넌트에서 필요로하는 데이터를 요청하기 위해 axios, fetch 등을 통하여 ajax 요청을 하거나, DOM 의 속성을 읽거나 직접 변경하는 작업을 진행한다.
+
+<br>
+
+### **업데이트**
+
+컴포넌트가 업데이트 되는 시점에 호출되는 메서드
+
+- getDerivedStateFromProps
+- shouldComponentUpdate
+- render
+- getSnapshotBeforeUpdate
+- componentDidUpdate
+
+<br>
+
+getDerivedStateFromProps
+
+컴포넌트의 props 나 state 가 바뀌었을때도 이 메서드가 호출된다.
+
+shouldComponentUpdate
+
+`shouldComponentUpdate` 메서드는 컴포넌트가 리렌더링 할지 말지를 결정하는 메서드.
+
+```js
+ shouldComponentUpdate(nextProps, nextState) {
+    console.log("shouldComponentUpdate", nextProps, nextState);
+    // 숫자의 마지막 자리가 4면 리렌더링하지 않습니다
+    return nextState.number % 10 !== 4;
+  }
+```
+
+주로 최적화 할 때 사용하는 메서드다. `React.memo` 의 역할과 비슷하다고 이해하면 된다.
+
+getSnapshotBeforeUpdate
+
+`getSnapshotBeforeUpdate` 는 컴포넌트에 변화가 일어나기 직전의 DOM 상태를 가져와서 특정 값을 반환하면 그 다음 발생하게 되는 `componentDidUpdate` 함수에서 받아와서 사용을 할 수 있다.
+
+```js
+ getSnapshotBeforeUpdate(prevProps, prevState) {
+    console.log("getSnapshotBeforeUpdate");
+    if (prevProps.color !== this.props.color) {
+      return this.myRef.style.color;
+    }
+    return null;
+  }
+```
+
+componentDidUpdate
+
+`componentDidUpdate` 는 리렌더링을 마치고, 화면에 우리가 원하는 변화가 모두 반영되고 난 뒤 호출되는 메서드다. 3번째 파라미터로 `getSnapshotBeforeUpdate` 에서 반환한 값을 조회 할 수 있다.
+
+```js
+ componentDidUpdate(prevProps, prevState, snapshot) {
+    console.log("componentDidUpdate", prevProps, prevState);
+    if (snapshot) {
+      console.log("업데이트 되기 직전 색상: ", snapshot);
+    }
+  }
+```
+
+```js
+ getSnapshotBeforeUpdate(prevProps, prevState) {
+    // DOM 업데이트가 일어나기 직전의 시점입니다.
+    // 새 데이터가 상단에 추가되어도 스크롤바를 유지해보겠습니다.
+    // scrollHeight 는 전 후를 비교해서 스크롤 위치를 설정하기 위함이고,
+    // scrollTop 은, 이 기능이 크롬에 이미 구현이 되어있는데,
+    // 이미 구현이 되어있다면 처리하지 않도록 하기 위함입니다.
+    if (prevState.array !== this.state.array) {
+      const { scrollTop, scrollHeight } = this.list;
+
+      // 여기서 반환 하는 값은 componentDidMount 에서 snapshot 값으로 받아올 수 있습니다.
+      return {
+        scrollTop,
+        scrollHeight
+      };
+    }
+  }
+
+  componentDidUpdate(prevProps, prevState, snapshot) {
+    if (snapshot) {
+      const { scrollTop } = this.list;
+      if (scrollTop !== snapshot.scrollTop) return; // 기능이 이미 구현되어있다면 처리하지 않습니다.
+      const diff = this.list.scrollHeight - snapshot.scrollHeight;
+      this.list.scrollTop += diff;
+    }
+  }
+```
+
+Chrome 브라우저에서는 브라우저 자체적으로 이미 구현되어있는 기능중에 하나인데, 새로운 내용이 추가되었을 때 사용자의 스크롤 위치를 유지시키는 기능이다.
+
+`getSnapshotBeforeUpdate` 는 사실 사용되는 일이 그렇게 많지 않다. 그냥 이런게 있다.. 정도만 알아두시면 충분하다.
+
+참고로 함수형 컴포넌트 + Hooks 를 사용 할 때에는 이 `getSnapshotBeforeUpdate` 를 대체 할 수 있는 기능이 아직 없다.
+
+DOM 에 변화가 반영되기 직전에 DOM 의 속성을 확인하고 싶을 때 이 생명주기 메서드를 사용하면 된다는 것을 알아두자.
+
+<br>
+
+### **언마운트**
+
+<br>
+
+언마운트라는것은, 컴포넌트가 화면에서 사라지는것을 의미한다.
+
+언마운트에 관련된 생명주기 메서드는 `componentWillUnmount` 하나다.
+
+componentWillUnmount
+
+`componentWillUnmount` 는 컴포넌트가 화면에서 사라지기 직전에 호출된다.
+
+```js
+componentWillUnmount() {
+    console.log("componentWillUnmount");
+  }
+```
+
+여기서는 주로 DOM에 직접 등록했었던 이벤트를 제거하고, 만약에 `setTimeout` 을 걸은것이 있다면 `clearTimeout` 을 통하여 제거한다. 추가적으로, 외부 라이브러리를 사용한게 있고 해당 라이브러리에 `dispose` 기능이 있다면 여기서 호출해주면 된다.
+
+<br>
+
+### **componentDidCatch 로 에러 잡아내기 / Sentry 연동**
+
+---
+
+<br>
