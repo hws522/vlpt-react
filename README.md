@@ -4517,3 +4517,5 @@ componentWillUnmount() {
 ---
 
 <br>
+
+리액트 앱에서 에러가 발생하는 상황
