@@ -4519,3 +4519,256 @@ componentWillUnmount() {
 <br>
 
 리액트 앱에서 에러가 발생하는 상황
+
+리액트 앱이 어떤 상황에서 에러가 발생하게 되는지 알아봅시다.
+
+User.js
+
+```js
+import React from 'react';
+
+function User({ user }) {
+  return (
+    <div>
+      <div>
+        <b>ID</b>: {user.id}
+      </div>
+      <div>
+        <b>Username:</b> {user.username}
+      </div>
+    </div>
+  );
+}
+
+export default User;
+```
+
+이 컴포넌트는 user 라는 props 를 받아와서 해당 데이터의 id 와 username 값을 보여준다.
+
+이 컴포넌트를 한번 App 컴포넌트에서 사용해보자.
+
+App.js
+
+```js
+import React from 'react';
+import User from './User';
+
+function App() {
+  const user = {
+    id: 1,
+    username: 'velopert',
+  };
+  return <User user={user} />;
+}
+
+export default App;
+```
+
+하지만, 만약에 user props 를 제대로 설정하지 않았다면
+
+```js
+return <User />;
+```
+
+에러가 뜨게 된다.
+
+개발자화면에서만 에러가 뜨고 실제 화면에서는 아무것도 나오지 않는다.
+
+실제 환경에서는 아무것도 렌더링되지 않고 흰 페이지만 나타나게 된다.
+
+만약에 여러분이 만든 서비스에서 사용자가 이러한 상황을 겪게 된다면 상당히 당황스럽다.
+
+이번 튜토리얼에서는 이런 상황에 이렇게 흰 화면을 보여주는 대신에, 에러가 발생했다는 것을 알려주는 방법에 대하여 알아볼 것이다.
+
+이에 대하여 진행하기 전에 어떤 상황에 또 이런 에러가 발생하는지 알아보고, 에러를 방지 할 수 있는 방법에 대해서도 알아본다.
+
+일단, 방금과 같은 에러를 방지하려면 User 컴포넌트에서 다음과 같은 작업을 하면 된다.
+
+User.js
+
+```js
+import React from 'react';
+
+function User({ user }) {
+  if (!user) {
+    return null;
+  }
+
+  return (
+    <div>
+      <div>
+        <b>ID</b>: {user.id}
+      </div>
+      <div>
+        <b>Username:</b> {user.username}
+      </div>
+    </div>
+  );
+}
+
+export default User;
+```
+
+이렇게 하면 user 값이 존재하지 않는다면 null 을 렌더링하게 된다.
+
+리액트 컴포넌트에서 null 을 렌더링하게되면 아무것도 나타나지 않게 된다. 이를 "null checking" 이라고 부른다.
+
+코드를 이렇게 작성해주면, 화면에 아무것도 보여지지 않는것은 마찬가지이지만, 적어도 에러는 발생하지 않는다.
+
+보통 데이터를 네트워크 요청을 통하여 나중에 데이터를 받아오게 되는 상황이 발생하는 경우 이렇게 데이터가 없으면 null 을 보여주거나, 아니면 <div>로딩중</div>과 같은 결과물을 렌더링하면 된다.
+
+에러가 발생 할 수 있는 또 다른 상황에 대해서 알아보자.
+
+```js
+function Users({ users }) {
+  return (
+    <ul>
+      {users.map((user) => (
+        <li key={user.id}>{user.username}</li>
+      ))}
+    </ul>
+  );
+}
+```
+
+만약에 위와 같은 컴포넌트에 users 값을 설정해주지 않았을 때에도 렌더링 과정에서 오류가 발생하게 된다.
+
+users 가 undefined 이면 당연히 배열의 내장함수 map 또한 존재하지 않기 때문이다.
+
+때문에 다음과 같이 users 가 없으면 다른 결과물을 반환하는 작업을 해주어야 한다.
+
+```js
+function Users({ users }) {
+  if (!users) return null;
+
+  return (
+    <ul>
+      {users.map((user) => (
+        <li key={user.id}>{user.username}</li>
+      ))}
+    </ul>
+  );
+}
+```
+
+또 다른 상황으로는 다음과 같은 상황이 있다.
+
+```js
+function Users({ users, onToggle }) {
+  if (!users) return null;
+
+  return (
+    <ul>
+      {users.map((user) => (
+        <li key={user.id} onClick={() => onToggle(user.id)}>
+          {user.username}
+        </li>
+      ))}
+    </ul>
+  );
+}
+```
+
+만약에 위 컴포넌트에 onToggle props 를 전달하지 않으면, 에러가 발생하게 될 것이다.
+
+에러를 방지하기 위해선 onToggle 을 props 로 넣어주는 것을 까먹지 않기 위해서 다음과 같이 defaultProps 설정을 해주는 방법이 있다.
+
+```js
+function Users({ users, onToggle }) {
+  if (!users) return null;
+
+  return (
+    <ul>
+      {users.map((user) => (
+        <li key={user.id} onClick={() => onToggle(user.id)}>
+          {user.username}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+Users.defaultProps = {
+  onToggle: () => {
+    console.warn('onToggle is missing!');
+  },
+};
+```
+
+componentDidCatch 로 에러 잡아내기
+
+이번에는 `componentDidCatch`생명주기 메서드를 사용하여 우리가 사전에 예외처리를 하지 않은 에러가 발생 했을 때 사용자에게 에러가 발생했다고 알려주는 화면을 보여줘본다.
+
+우선, src 디렉터리에 ErrorBoundary 라는 컴포넌트를 만든다.
+
+ErrorBoundary.js
+
+```js
+import React, { Component } from 'react';
+
+class ErrorBoundary extends Component {
+  state = {
+    error: false,
+  };
+
+  componentDidCatch(error, info) {
+    console.log('에러가 발생했습니다.');
+    console.log({
+      error,
+      info,
+    });
+    this.setState({
+      error: true,
+    });
+  }
+
+  render() {
+    if (this.state.error) {
+      return <h1>에러 발생!</h1>;
+    }
+    return this.props.children;
+  }
+}
+
+export default ErrorBoundary;
+```
+
+여기서 componentDidCatch 메서드에는 두개의 파라미터를 사용하게 되는데 첫번째 파라미터는 에러의 내용, 두번째 파라미터에서는 에러가 발생한 위치를 알려준다.
+
+이 메서드에서 현재 컴포넌트 상태 error 를 true 로 설정을 해주고, render() 메서드에서는 만약 this.state.error 값이 true 라면 에러가 발생했다는 문구를 렌더링하도록 하고 그렇지 않다면 this.props.children 을 렌더링하도록 처리를 해준다.
+
+그 다음에 App 컴포넌트에서 <User /> 컴포넌트를 감싸준다.
+
+App.js
+
+```js
+import React from 'react';
+import User from './User';
+import ErrorBoundary from './ErrorBoundary';
+
+function App() {
+  const user = {
+    id: 1,
+    username: 'velopert',
+  };
+  return (
+    <ErrorBoundary>
+      <User />
+    </ErrorBoundary>
+  );
+}
+
+export default App;
+```
+
+그리고 이전에 User 컴포넌트에서 null checking 을 하는 코드를 주석처리한다.
+
+그러면 똑같이 개발자화면에는 에러메세지가 뜨겠지만, 사용자화면에는 빈 화면이 아닌 에러발생이라는 글이 나오는 것을 알 수 있다.
+
+componentDidCatch 를 사용해서 앱에서 에러가 발생했을 때 사용자에게 에러가 발생했음을 인지시켜줄 수는 있지만, componentDidCatch 가 실제로 호출되는 일은 서비스에서 "없어야 하는게" 맞다. 만약에 우리가 놓진 에러가 있다면, 우리가 이를 알아내어 예외 처리를 해주어야 한다.
+
+우리는 발견해내지 못했지만, 사용자가 발견하게 되는 그런 오류들이 있다면 componentDidCatch 에서 error 와 info 값을 네트워크를 통하여 다른 곳으로 전달을 해주면 된다. 다만 이를 위해서 따로 서버를 만드는건 굉장히 번거로운 작업이다. 굉장히 괜찮은 솔루션으로, Sentry 라는 상용서비스가 있다. 돈내고 쓰면 더 많은 작업을 할 수 있지만, 무료 모델로도 충분히 사용을 할 수 있으므로, 장기적으로 작업하는 프로젝트에 적용을 하시는 것을 권장한다.
+
+sentry 는 생략한다.
+
+<br>
