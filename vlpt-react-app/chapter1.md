@@ -1,7 +1,3 @@
-# Start React with Velopert
-
-<br>
-
 ### **JSX**
 
 ---
