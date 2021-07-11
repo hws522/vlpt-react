@@ -1,66 +1,34 @@
-import React, { useEffect, useReducer } from 'react';
+import React, { useState } from 'react';
 import axios from 'axios';
+import useAsync from './useAsync';
+import User from './User';
 
-function reducer(state, action) {
-  switch (action.type) {
-    case 'LOADING':
-      return {
-        loading: true,
-        data: null,
-        error: null,
-      };
-    case 'SUCCESS':
-      return {
-        loading: false,
-        data: action.data,
-        error: null,
-      };
-    case 'ERROR':
-      return {
-        loading: false,
-        data: null,
-        error: action.error,
-      };
-    default:
-      throw new Error(`Unhandled action type: ${action.type}`);
-  }
+async function getUsers() {
+  const response = await axios.get('https://jsonplaceholder.typicode.com/users/');
+  return response.data;
 }
 
 function Users() {
-  const [state, dispatch] = useReducer(reducer, {
-    loading: false,
-    data: null,
-    error: null,
-  });
-  const { loading, data: users, error } = state;
-  const fetchUsers = async () => {
-    dispatch({ type: 'LOADING' });
-    try {
-      const response = await axios.get('https://jsonplaceholder.typicode.com/users/');
-      dispatch({ type: 'SUCCESS', data: response.data });
-    } catch (e) {
-      dispatch({ type: 'ERROR', error: e });
-    }
-  };
+  const [userId, setUserId] = useState(null);
+  const [state, refetch] = useAsync(getUsers, [], true);
 
-  useEffect(() => {
-    fetchUsers();
-  }, []);
+  const { loading, data: users, error } = state;
 
   if (loading) return <div>로딩중..</div>;
   if (error) return <div>에러발생</div>;
-  if (!users) return null;
+  if (!users) return <button onClick={refetch}>불러오기</button>;
 
   return (
     <>
       <ul>
         {users.map((user) => (
-          <li key={user.id}>
+          <li key={user.id} onClick={() => setUserId(user.id)} style={{ cursor: 'pointer' }}>
             {user.username} ({user.name})
           </li>
         ))}
       </ul>
-      <button onClick={fetchUsers}>refresh</button>
+      <button onClick={refetch}>refresh</button>
+      {userId && <User id={userId} />}
     </>
   );
 }
