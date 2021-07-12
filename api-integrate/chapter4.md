@@ -877,8 +877,272 @@ react-async 라이브러리는 정말 쓸만하고, 편하다. 다만, 우리가
 <br>
 <br>
 
-### **Context 에서 비동기 작업 상태 관리하기**
+### **Context 와 함께 사용하기**
 
 ---
 
 <br>
+
+이번에는, 리액트의 Context 와 API 연동을 함께 하고 싶다면 어떻게 해야 되는지 알아보도록 한다.
+
+컴포넌트에서 필요한 외부 데이터들은 컴포넌트 내부에서 `useAsync` 같은 Hook 을 사용해서 작업을 하면 충분하지만, 가끔씩 특정 데이터들은 다양한 컴포넌트에서 필요하게 될 때도 있는데 (예: 현재 로그인된 사용자의 정보, 설정 등) 그럴 때에는 Context 를 사용하면 개발이 편해진다.
+
+UsersContext.js
+
+```js
+import React, { createContext, useReducer, useContext } from 'react';
+
+// UsersContext 에서 사용 할 기본 상태
+const initialState = {
+  users: {
+    loading: false,
+    data: null,
+    error: null,
+  },
+  user: {
+    loading: false,
+    data: null,
+    error: null,
+  },
+};
+
+// 로딩중일 때 바뀔 상태 객체
+const loadingState = {
+  loading: true,
+  data: null,
+  error: null,
+};
+
+// 성공했을 때의 상태 만들어주는 함수
+const success = (data) => ({
+  loading: false,
+  data,
+  error: null,
+});
+
+// 실패했을 때의 상태 만들어주는 함수
+const error = (error) => ({
+  loading: false,
+  data: null,
+  error: error,
+});
+
+// 위에서 만든 객체 / 유틸 함수들을 사용하여 리듀서 작성
+function usersReducer(state, action) {
+  switch (action.type) {
+    case 'GET_USERS':
+      return {
+        ...state,
+        users: loadingState,
+      };
+    case 'GET_USERS_SUCCESS':
+      return {
+        ...state,
+        users: success(action.data),
+      };
+    case 'GET_USERS_ERROR':
+      return {
+        ...state,
+        users: error(action.error),
+      };
+    case 'GET_USER':
+      return {
+        ...state,
+        user: loadingState,
+      };
+    case 'GET_USER_SUCCESS':
+      return {
+        ...state,
+        user: success(action.data),
+      };
+    case 'GET_USER_ERROR':
+      return {
+        ...state,
+        user: error(action.error),
+      };
+    default:
+      throw new Error(`Unhanded action type: ${action.type}`);
+  }
+}
+
+// State 용 Context 와 Dispatch 용 Context 따로 만들어주기
+const UsersStateContext = createContext(null);
+const UsersDispatchContext = createContext(null);
+
+// 위에서 선언한 두가지 Context 들의 Provider 로 감싸주는 컴포넌트
+export function UsersProvider({ children }) {
+  const [state, dispatch] = useReducer(usersReducer, initialState);
+  return (
+    <UsersStateContext.Provider value={state}>
+      <UsersDispatchContext.Provider value={dispatch}>{children}</UsersDispatchContext.Provider>
+    </UsersStateContext.Provider>
+  );
+}
+
+// State 를 쉽게 조회 할 수 있게 해주는 커스텀 Hook
+export function useUsersState() {
+  const state = useContext(UsersStateContext);
+  if (!state) {
+    throw new Error('Cannot find UsersProvider');
+  }
+  return state;
+}
+
+// Dispatch 를 쉽게 사용 할 수 있게 해주는 커스텀 Hook
+export function useUsersDispatch() {
+  const dispatch = useContext(UsersDispatchContext);
+  if (!dispatch) {
+    throw new Error('Cannot find UsersProvider');
+  }
+  return dispatch;
+}
+```
+
+우리가 만약에 id 를 가지고 특정 사용자의 정보를 가져오는 API 를 호출하고 싶다면 이런 형식으로 해주어야 한다.
+
+```js
+dispatch({ type: 'GET_USER' });
+try {
+  const response = await getUser();
+  dispatch({ type: 'GET_USER_SUCCESS', data: response.data });
+} catch (e) {
+  dispatch({ type: 'GET_USER_ERROR', error: e });
+}
+```
+
+요청이 시작 했을때 액션을 디스패치해주고, 요청이 성공하거나 실패했을 때 또 다시 디스패치 해주는 것이다.
+
+<br>
+
+우리는 이러한 작업을 처리하는 함수를 만들어준다.
+
+UsersContext.js 를 열어서 상단에 axios 를 불러오고, 코드의 하단 부분에 `getUsers` 와 `getUser` 함수를 작성한다.
+
+이 함수들은 `dispatch` 를 파라미터로 받아오고, API 에 필요한 파라미터도 받아오게 된다.
+
+```js
+import React, { createContext, useReducer, useContext } from 'react';
+import axios from 'axios';
+
+// (...)
+
+export async function getUsers(dispatch) {
+  dispatch({ type: 'GET_USERS' });
+  try {
+    const response = await axios.get('https://jsonplaceholder.typicode.com/users');
+    dispatch({ type: 'GET_USERS_SUCCESS', data: response.data });
+  } catch (e) {
+    dispatch({ type: 'GET_USERS_ERROR', error: e });
+  }
+}
+
+export async function getUser(dispatch, id) {
+  dispatch({ type: 'GET_USER' });
+  try {
+    const response = await axios.get(`https://jsonplaceholder.typicode.com/users/${id}`);
+    dispatch({ type: 'GET_USER_SUCCESS', data: response.data });
+  } catch (e) {
+    dispatch({ type: 'GET_USER_ERROR', error: e });
+  }
+}
+```
+
+이제 App 컴포넌트를 열어서 UsersProvider 로 감싸준다.
+
+App.js
+
+```js
+import React from 'react';
+import Users from './Users';
+import { UsersProvider } from './UsersContext';
+
+function App() {
+  return (
+    <UsersProvider>
+      <Users />
+    </UsersProvider>
+  );
+}
+
+export default App;
+```
+
+Users 컴포넌트의 코드를 Context 를 사용하는 형태의 코드로 전환한다.
+
+Users.js
+
+```js
+import React, { useState } from 'react';
+import { useUsersState, useUsersDispatch, getUsers } from './UsersContext';
+import User from './User';
+
+function Users() {
+  const [userId, setUserId] = useState(null);
+  const state = useUsersState();
+  const dispatch = useUsersDispatch();
+
+  const { data: users, loading, error } = state.users;
+  const fetchData = () => {
+    getUsers(dispatch);
+  };
+
+  if (loading) return <div>로딩중..</div>;
+  if (error) return <div>에러가 발생했습니다</div>;
+  if (!users) return <button onClick={fetchData}>불러오기</button>;
+
+  return (
+    <>
+      <ul>
+        {users.map((user) => (
+          <li key={user.id} onClick={() => setUserId(user.id)} style={{ cursor: 'pointer' }}>
+            {user.username} ({user.name})
+          </li>
+        ))}
+      </ul>
+      <button onClick={fetchData}>다시 불러오기</button>
+      {userId && <User id={userId} />}
+    </>
+  );
+}
+
+export default Users;
+```
+
+`useUsersState()` 와 `useUsersDispatch()` 를 사용해서 `state` 와 `dispatch` 를 가져오고, 요청을 시작 할 때에는 `getUsers()` 함수 안에 `dispatch` 를 넣어서 호출을 해주었다.
+
+User 컴포넌트도 전환한다.
+
+User.js
+
+```js
+import React, { useEffect } from 'react';
+import { useUsersState, useUsersDispatch, getUser } from './UsersContext';
+
+function User({ id }) {
+  const state = useUsersState();
+  const dispatch = useUsersDispatch();
+  useEffect(() => {
+    getUser(dispatch, id);
+  }, [dispatch, id]);
+
+  const { data: user, loading, error } = state.user;
+
+  if (loading) return <div>로딩중..</div>;
+  if (error) return <div>에러가 발생했습니다</div>;
+  if (!user) return null;
+  return (
+    <div>
+      <h2>{user.username}</h2>
+      <p>
+        <b>Email:</b> {user.email}
+      </p>
+    </div>
+  );
+}
+
+export default User;
+```
+
+여기선 `useEffect` 를 사용해서 `id` 값이 바뀔 때마다 `getUser()` 함수를 호출해주도록 하면 된다.
+
+여기서 `getUser()` 함수를 호출 할 때에는 두번째 파라미터에 현재 `props` 로 받아온 `id` 값을 넣어주었다.
