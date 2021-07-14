@@ -1146,3 +1146,243 @@ export default User;
 여기선 `useEffect` 를 사용해서 `id` 값이 바뀔 때마다 `getUser()` 함수를 호출해주도록 하면 된다.
 
 여기서 `getUser()` 함수를 호출 할 때에는 두번째 파라미터에 현재 `props` 로 받아온 `id` 값을 넣어주었다.
+
+<br>
+
+이제 여기서 조금 더 나아가서 반복되는 로직들을 함수화하여 재활용 하는 방법을 알아본다.
+
+```js
+export async function getUsers(dispatch) {
+  dispatch({ type: 'GET_USERS' });
+  try {
+    const response = await axios.get('https://jsonplaceholder.typicode.com/users');
+    dispatch({ type: 'GET_USERS_SUCCESS', data: response.data });
+  } catch (e) {
+    dispatch({ type: 'GET_USERS_ERROR', error: e });
+  }
+}
+
+export async function getUser(dispatch, id) {
+  dispatch({ type: 'GET_USER' });
+  try {
+    const response = await axios.get(`https://jsonplaceholder.typicode.com/users/${id}`);
+    dispatch({ type: 'GET_USER_SUCCESS', data: response.data });
+  } catch (e) {
+    dispatch({ type: 'GET_USER_ERROR', error: e });
+  }
+}
+```
+
+이렇게 반복되는 코드들을 리팩토링 해본다.
+
+우선, api 들이 들어있는 파일을 따로 분리해준다.
+
+api.js
+
+```js
+import axios from 'axios';
+
+export async function getUsers() {
+  const response = await axios.get('https://jsonplaceholder.typicode.com/users');
+  return response.data;
+}
+
+export async function getUser(id) {
+  const response = await axios.get(`https://jsonplaceholder.typicode.com/users/${id}`);
+  return response.data;
+}
+```
+
+asyncActionUtils.js
+
+```js
+// 이 함수는 파라미터로 액션의 타입 (예: GET_USER) 과 Promise 를 만들어주는 함수를 받아옵니다.
+export default function createAsyncDispatcher(type, promiseFn) {
+  // 성공, 실패에 대한 액션 타입 문자열을 준비합니다.
+  const SUCCESS = `${type}_SUCCESS`;
+  const ERROR = `${type}_ERROR`;
+
+  // 새로운 함수를 만듭니다.
+  // ...rest 를 사용하여 나머지 파라미터를 rest 배열에 담습니다.
+  async function actionHandler(dispatch, ...rest) {
+    dispatch({ type }); // 요청 시작됨
+    try {
+      const data = await promiseFn(...rest); // rest 배열을 spread 로 넣어줍니다.
+      dispatch({
+        type: SUCCESS,
+        data,
+      }); // 성공함
+    } catch (e) {
+      dispatch({
+        type: ERROR,
+        error: e,
+      }); // 실패함
+    }
+  }
+
+  return actionHandler; // 만든 함수를 반환합니다.
+}
+```
+
+이렇게 `createAsyncDispatcher` 를 만들어주면, `UsersContext` 의 코드를 다음과 같이 리팩토링 할 수 있다.
+
+UsersContext.js
+
+```js
+import React, { createContext, useReducer, useContext } from 'react';
+import createAsyncDispatcher from './createAsyncDispatcher';
+import * as api from './api'; // api 파일에서 내보낸 모든 함수들을 불러옴
+
+(...)
+
+export const getUsers = createAsyncDispatcher('GET_USERS', api.getUsers);
+export const getUser = createAsyncDispatcher('GET_USER', api.getUser);
+```
+
+리듀서쪽 코드도 리팩토링을 할 수 있다. `UsersContext` 의 loadingState, success, error 를 잘라내서 `asyncActionUtils.js `안에 붙여넣자.
+
+그리고, 다음과 같이 `initialAsyncState` 객체를 만들어서 내보내고, `createAsyncHandler` 라는 함수도 만들어서 내보낸다.
+
+asyncActionUtils.js
+
+```js
+// 이 함수는 파라미터로 액션의 타입 (예: GET_USER) 과 Promise 를 만들어주는 함수를 받아옵니다.
+export function createAsyncDispatcher(type, promiseFn) {
+  // 성공, 실패에 대한 액션 타입 문자열을 준비합니다.
+  const SUCCESS = `${type}_SUCCESS`;
+  const ERROR = `${type}_ERROR`;
+
+  // 새로운 함수를 만듭니다.
+  // ...rest 를 사용하여 나머지 파라미터를 rest 배열에 담습니다.
+  async function actionHandler(dispatch, ...rest) {
+    dispatch({ type }); // 요청 시작됨
+    try {
+      const data = await promiseFn(...rest); // rest 배열을 spread 로 넣어줍니다.
+      dispatch({
+        type: SUCCESS,
+        data,
+      }); // 성공함
+    } catch (e) {
+      dispatch({
+        type: ERROR,
+        error: e,
+      }); // 실패함
+    }
+  }
+
+  return actionHandler; // 만든 함수를 반환합니다.
+}
+
+export const initialAsyncState = {
+  loading: false,
+  data: null,
+  error: null,
+};
+
+// 로딩중일 때 바뀔 상태 객체
+const loadingState = {
+  loading: true,
+  data: null,
+  error: null,
+};
+
+// 성공했을 때의 상태 만들어주는 함수
+const success = (data) => ({
+  loading: false,
+  data,
+  error: null,
+});
+
+// 실패했을 때의 상태 만들어주는 함수
+const error = (error) => ({
+  loading: false,
+  data: null,
+  error: error,
+});
+
+// 세가지 액션을 처리하는 리듀서를 만들어줍니다
+// type 은 액션 타입, key 는 리듀서서 사용할 필드 이름입니다 (예: user, users)
+export function createAsyncHandler(type, key) {
+  // 성공, 실패에 대한 액션 타입 문자열을 준비합니다.
+  const SUCCESS = `${type}_SUCCESS`;
+  const ERROR = `${type}_ERROR`;
+
+  // 함수를 새로 만들어서
+  function handler(state, action) {
+    switch (action.type) {
+      case type:
+        return {
+          ...state,
+          [key]: loadingState,
+        };
+      case SUCCESS:
+        return {
+          ...state,
+          [key]: success(action.data),
+        };
+      case ERROR:
+        return {
+          ...state,
+          [key]: error(action.error),
+        };
+      default:
+        return state;
+    }
+  }
+
+  // 반환합니다
+  return handler;
+}
+```
+
+이제 `UsersContext` 에서 방금 만든 `initialAsyncState` 와 `createAsyncHandler` 를 사용해서 코드를 고친다.
+
+UsersContext.js
+
+```js
+import React, { createContext, useReducer, useContext } from 'react';
+import {
+  createAsyncDispatcher,
+  createAsyncHandler,
+  initialAsyncState
+} from './asyncActionUtils';
+import * as api from './api'; // api 파일에서 내보낸 모든 함수들을 불러옴
+
+// UsersContext 에서 사용 할 기본 상태
+const initialState = {
+  users: initialAsyncState,
+  user: initialAsyncState
+};
+
+const usersHandler = createAsyncHandler('GET_USERS', 'users');
+const userHandler = createAsyncHandler('GET_USER', 'user');
+
+// 위에서 만든 객체 / 유틸 함수들을 사용하여 리듀서 작성
+function usersReducer(state, action) {
+  switch (action.type) {
+    case 'GET_USERS':
+    case 'GET_USERS_SUCCESS':
+    case 'GET_USERS_ERROR':
+      return usersHandler(state, action);
+    case 'GET_USER':
+    case 'GET_USER_SUCCESS':
+    case 'GET_USER_ERROR':
+      return userHandler(state, action);
+    default:
+      throw new Error(`Unhanded action type: ${action.type}`);
+  }
+}
+
+(...)
+```
+
+위 코드에서는 각 요청에 대하여 3가지 (시작, 성공, 실패) 액션을 처리하는 함수를 만들었다.
+
+하단의 switch 문에서는, 만약 return 또는 break 를 하지 않으면, 여러개의 case 에 대하여 동일한 코드를 실행해준다.
+
+예를 들자면 GET_USERS, GET_USERS_SUCCESS, GET_USERS_ERROR 액션이 발생하게 된다면 usersHandler(state, action) 을 호출해서 반환을 해준다.
+
+이렇게 까지 리팩토링을 할 필요가 없지만, 이런 코드가 맘에 든다면, 자주 사용되는 코드를 함수화해서 재사용하면 좋다.
+
+<br>
+<br>
