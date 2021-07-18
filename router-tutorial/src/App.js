@@ -1,7 +1,7 @@
 import { Link, Route } from 'react-router-dom';
 import Home from './Home';
 import About from './About';
-import Profile from './Profile';
+import Profiles from './Profiles';
 
 function App() {
   return (
@@ -13,12 +13,15 @@ function App() {
         <li>
           <Link to="/about">ABOUT</Link>
         </li>
+        <li>
+          <Link to="/profiles">PROFILES</Link>
+        </li>
       </ui>
       <hr />
 
       <Route exact path="/" component={Home} />
       <Route path="/about" component={About} />
-      <Route path="/profiles/:username" component={Profile} />
+      <Route path="/profiles" component={Profiles} />
     </div>
   );
 }
