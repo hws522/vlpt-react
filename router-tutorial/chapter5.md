@@ -391,3 +391,247 @@ export default App;
 그 이유는, setState 같은것을 할 필요도 없고, 링크를 통하여 다른 곳에서 쉽게 진입 시킬 수도 있고, 나중에 검색엔진 크롤링 까지 고려한다면, 검색엔진 봇이 더욱 다양한 데이터를 수집해 갈 수 있기 때문이다.
 
 <br>
+
+### 라우터 부가기능
+
+<br>
+
+**history 객체**
+
+`history` 객체는 라우트로 사용된 컴포넌트에게 `match, location` 과 함께 전달되는 `props` 중 하나다. 이 객체를 통하여, 우리가 컴포넌트 내에 구현하는 메소드에서 라우터에 직접 접근을 할 수 있다 - 뒤로가기, 특정 경로로 이동, 이탈 방지 등..
+
+한번, 이 객체를 사용하는 예제 페이지를 작성해본다.
+
+HistorySample.js
+
+```js
+import React, { useEffect } from 'react';
+
+function HistorySample({ history }) {
+  const goBack = () => {
+    history.goBack();
+  };
+
+  const goHome = () => {
+    history.push('/');
+  };
+
+  useEffect(() => {
+    console.log(history);
+    const unblock = history.block('정말 떠나실건가요?');
+    return () => {
+      unblock();
+    };
+  }, [history]);
+
+  return (
+    <div>
+      <button onClick={goBack}>뒤로가기</button>
+      <button onClick={goHome}>홈으로</button>
+    </div>
+  );
+}
+
+export default HistorySample;
+```
+
+App.js
+
+```js
+import React from 'react';
+import { Route, Link } from 'react-router-dom';
+import About from './About';
+import Home from './Home';
+import Profiles from './Profiles';
+import HistorySample from './HistorySample';
+
+const App = () => {
+  return (
+    <div>
+      <ul>
+        <li>
+          <Link to="/">홈</Link>
+        </li>
+        <li>
+          <Link to="/about">소개</Link>
+        </li>
+        <li>
+          <Link to="/profiles">프로필 목록</Link>
+        </li>
+        <li>
+          <Link to="/history">예제</Link>
+        </li>
+      </ul>
+      <hr />
+      <Route path="/" exact={true} component={Home} />
+      <Route path="/about" component={About} />
+      <Route path="/profiles" component={Profiles} />
+      <Route path="/history" component={HistorySample} />
+    </div>
+  );
+};
+
+export default App;
+```
+
+이렇게 `history` 객체를 사용하면 조건부로 다른 곳으로 이동도 가능하고, 이탈을 메시지박스를 통하여 막을 수도 있다.
+
+### withRouter HoC
+
+`withRouter HoC` 는 라우트 컴포넌트가 아닌곳에서 `match / location / history` 를 사용해야 할 때 쓰면 된다.
+
+WithRouterSample.js
+
+```js
+import React from 'react';
+import { withRouter } from 'react-router-dom';
+const WithRouterSample = ({ location, match, history }) => {
+  return (
+    <div>
+      <h4>location</h4>
+      <textarea value={JSON.stringify(location, null, 2)} readOnly />
+      <h4>match</h4>
+      <textarea value={JSON.stringify(match, null, 2)} readOnly />
+      <button onClick={() => history.push('/')}>홈으로</button>
+    </div>
+  );
+};
+
+export default withRouter(WithRouterSample);
+```
+
+Profiles.js
+
+```js
+import React from 'react';
+import { Link, Route } from 'react-router-dom';
+import Profile from './Profile';
+import WithRouterSample from './WithRouterSample';
+
+const Profiles = () => {
+  return (
+    <div>
+      <h3>유저 목록:</h3>
+      <ul>
+        <li>
+          <Link to="/profiles/velopert">velopert</Link>
+        </li>
+        <li>
+          <Link to="/profiles/gildong">gildong</Link>
+        </li>
+      </ul>
+
+      <Route path="/profiles" exact render={() => <div>유저를 선택해주세요.</div>} />
+      <Route path="/profiles/:username" component={Profile} />
+      <WithRouterSample />
+    </div>
+  );
+};
+
+export default Profiles;
+```
+
+`withRouter` 를 사용하면, 자신의 부모 컴포넌트 기준의 `match` 값이 전달된다. 그래서 현재 gildong 이라는 URL Params 가 있는 상황임에도 불구하고 params 쪽이 `{}` 이렇게 비어있다. `WithRouterSample` 은 Profiles 에서 렌더링 되었고, 해당 컴포넌트는 `/profile` 규칙에 일치하기 때문에 이러한 결과가 나타났다.
+
+<br>
+
+### Switch
+
+`Switch` 는 여러 `Route` 들을 감싸서 그 중 규칙이 일치하는 라우트 단 하나만을 렌더링시켜준다. `Switch` 를 사용하면, 아무것도 일치하지 않았을때 보여줄 Not Found 페이지를 구현 할 수도 있다.
+
+App.js
+
+```js
+import React from 'react';
+import { Switch, Route, Link } from 'react-router-dom';
+import About from './About';
+import Home from './Home';
+import Profiles from './Profiles';
+import HistorySample from './HistorySample';
+
+const App = () => {
+  return (
+    <div>
+      <ul>
+        <li>
+          <Link to="/">홈</Link>
+        </li>
+        <li>
+          <Link to="/about">소개</Link>
+        </li>
+        <li>
+          <Link to="/profiles">프로필 목록</Link>
+        </li>
+        <li>
+          <Link to="/history">예제</Link>
+        </li>
+      </ul>
+      <hr />
+      <Switch>
+        <Route path="/" exact={true} component={Home} />
+        <Route path="/about" component={About} />
+        <Route path="/profiles" component={Profiles} />
+        <Route path="/history" component={HistorySample} />
+        <Route
+          // path 를 따로 정의하지 않으면 모든 상황에 렌더링됨
+          render={({ location }) => (
+            <div>
+              <h2>이 페이지는 존재하지 않습니다:</h2>
+              <p>{location.pathname}</p>
+            </div>
+          )}
+        />
+      </Switch>
+    </div>
+  );
+};
+
+export default App;
+```
+
+<br>
+
+### NavLink
+
+`NavLink` 는 `Link` 랑 비슷한데, 만약 현재 경로와 `Link` 에서 사용하는 경로가 일치하는 경우 특정 스타일 혹은 클래스를 적용 할 수 있는 컴포넌트다.
+
+Profiles.js
+
+```js
+import React from 'react';
+import { Route, NavLink } from 'react-router-dom';
+import Profile from './Profile';
+import WithRouterSample from './WithRouterSample';
+
+const Profiles = () => {
+  return (
+    <div>
+      <h3>유저 목록:</h3>
+      <ul>
+        <li>
+          <NavLink to="/profiles/velopert" activeStyle={{ background: 'black', color: 'white' }}>
+            velopert
+          </NavLink>
+        </li>
+        <li>
+          <NavLink to="/profiles/gildong" activeStyle={{ background: 'black', color: 'white' }}>
+            gildong
+          </NavLink>
+        </li>
+      </ul>
+
+      <Route path="/profiles" exact render={() => <div>유저를 선택해주세요.</div>} />
+      <Route path="/profiles/:username" component={Profile} />
+      <WithRouterSample />
+    </div>
+  );
+};
+
+export default Profiles;
+```
+
+만약에 스타일이 아니라 CSS 클래스를 적용하시고 싶으면 `activeStyle` 대신 `activeClassName` 을 사용하면 된다.
+
+<br>
+
+이후 문서정리 부분은 너무 예전거라 생략..
