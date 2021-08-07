@@ -13,3 +13,11 @@
 [Chapter 5 - React Router](/router-tutorial/chapter5.md)
 
 <br>
+
+[Chapter 6 - Redux](/learn-redux/chapter6.md)
+
+<br>
+
+[Chapter 7 - Redux 미들웨어](/learn-redux-middleware/chapter7.md)
+
+<br>
